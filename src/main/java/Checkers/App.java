@@ -41,6 +41,8 @@ public class App extends PApplet {
 
     public static int WIDTH = CELLSIZE*BOARD_WIDTH+SIDEBAR;
     public static int HEIGHT = BOARD_WIDTH*CELLSIZE;
+    public static Cell tempCell;
+    public Move movementOfCheckersPiece;
 
     public static final int FPS = 60;
 
@@ -52,6 +54,7 @@ public class App extends PApplet {
     private HashSet<Cell> selectedCells;
     private Set<Cell> availableMoves;
     private HashMap<Character, HashSet<CheckersPiece>> piecesInPlay = new HashMap<>();
+
     public char currentPlayer = 'w';
 
     /* --------------------------------------- */
@@ -118,45 +121,57 @@ public class App extends PApplet {
     @Override
     public void mousePressed(MouseEvent e) {
         //Check if the user clicked on a piece which is theirs - make sure only whoever current turn it is, can click on pieces
-        int x = e.getX();
-        int y = e.getY();
-        if (x < 0 || x >= App.WIDTH || y < 0 || y >= App.HEIGHT) return;
+        boolean isPieceMoving = false;
 
-        Cell clicked = board[y/App.CELLSIZE][x/App.CELLSIZE];
-
-        if (clicked.getPiece() != null && Character.toLowerCase(clicked.getPiece().getColour()) == currentPlayer) {
-            //valid piece to click
-            if (clicked.getPiece() == currentSelected) {
-                currentSelected = null;
-            } else {
-                currentSelected = clicked.getPiece();
-                availableMoves = currentSelected.getAvailableMoves(this.board);
+        if (App.tempCell!=null){
+            if (tempCell.getPiece()!=null){
+                if(tempCell.getPiece().isMoving)
+                    isPieceMoving=true;
             }
-            //TODO: highlight available moves for current piece - done
-        } else if (clicked.getPiece()==null && currentSelected!=null){
-            if (availableMoves.contains(clicked)){
+        }
 
-                Move movementOfCheckersPiece = new Move(currentSelected.getPosition(), this.board);
-                CheckersPiece capturedPiece = movementOfCheckersPiece.processMove(currentSelected.getPosition(),clicked);
 
-                if (capturedPiece !=null && currentPlayer=='w'){
-                    piecesInPlay.get('b').remove(capturedPiece);
-                    capturedPiece.getPosition().setPiece(null);
-                } else if (capturedPiece !=null && currentPlayer=='b') {
-                    piecesInPlay.get('w').remove(capturedPiece);
-                    capturedPiece.getPosition().setPiece(null);
+        if(!isPieceMoving) {
+            int x = e.getX();
+            int y = e.getY();
+            if (x < 0 || x >= App.WIDTH || y < 0 || y >= App.HEIGHT) return;
+
+            Cell clicked = board[y / App.CELLSIZE][x / App.CELLSIZE];
+
+            if (clicked.getPiece() != null && Character.toLowerCase(clicked.getPiece().getColour()) == currentPlayer) {
+                //valid piece to click
+                if (clicked.getPiece() == currentSelected) {
+                    currentSelected = null;
+                } else {
+                    currentSelected = clicked.getPiece();
+                    availableMoves = currentSelected.getAvailableMoves(this.board);
                 }
+                //TODO: highlight available moves for current piece - done
+            } else if (clicked.getPiece() == null && currentSelected != null) {
+                if (availableMoves.contains(clicked)) {
+
+                    movementOfCheckersPiece = new Move(currentSelected.getPosition(), this.board);
+                    CheckersPiece capturedPiece = movementOfCheckersPiece.processMove(currentSelected.getPosition(), clicked);
+
+                    if (capturedPiece != null && currentPlayer == 'w') {
+                        piecesInPlay.get('b').remove(capturedPiece);
+                        capturedPiece.getPosition().setPiece(null);
+                    } else if (capturedPiece != null && currentPlayer == 'b') {
+                        piecesInPlay.get('w').remove(capturedPiece);
+                        capturedPiece.getPosition().setPiece(null);
+                    }
 
 
-                availableMoves.clear();
-                currentSelected = null;
-                if(currentPlayer=='b') {
-                    currentPlayer='w';
-                } else if (currentPlayer=='w'){
-                    currentPlayer ='b';
+                    availableMoves.clear();
+                    currentSelected = null;
+                    if (currentPlayer == 'b') {
+                        currentPlayer = 'w';
+                    } else if (currentPlayer == 'w') {
+                        currentPlayer = 'b';
+                    }
                 }
             }
-            }
+        }
 
         //TODO: Check if user clicked on an available move - move the selected piece there - done
         //TODO: Remove captured pieces from the board - done
@@ -174,13 +189,14 @@ public class App extends PApplet {
      */
     @Override
     public void draw() {
+
         this.noStroke();
         background(WHITE_RGB[0], WHITE_RGB[1], WHITE_RGB[2]);
         //draw the board
         for (int i = 0; i < board.length; i++) {
             for (int i2 = 0; i2 < board[i].length; i2++) {
                 //if cell is selected, highlight in green
-                //TODO: draw highlighted cells
+                //TODO: draw highlighted cells - done
 
                 if (currentSelected != null && board[i][i2].getPiece() == currentSelected) {
                     this.setFill(1, (i2 + i) % 2);
@@ -198,12 +214,15 @@ public class App extends PApplet {
                     }
 
                 }
-                board[i][i2].draw(this); //draw the piec3
-
+                board[i][i2].draw(this);
             }
         }
 
-//        text("Black wins!", App.WIDTH*0.2f, App.HEIGHT*0.4f);
+        if(movementOfCheckersPiece!=null && tempCell!=null){
+            movementOfCheckersPiece.tick();
+            App.tempCell.draw(this);
+        }
+
 //        check if the any player has no more pieces. The winner is the player who still has pieces remaining
 
         if (piecesInPlay.get('w').isEmpty() || piecesInPlay.get('b').isEmpty()) {
@@ -219,6 +238,7 @@ public class App extends PApplet {
                 text("White wins!", App.WIDTH*0.2f, App.HEIGHT*0.4f);
             }
         }
+
     }
 
     /**

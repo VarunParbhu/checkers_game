@@ -3,32 +3,70 @@ package Checkers;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Move {
-    public static final int SECONDS_BETWEEN_MOVES = 50;
-    private int timer;
 
+public class Move {
     private Cell cell;
     private Cell[][] board;
 
     private boolean player_one;
     private boolean player_two;
 
+    public static CheckersPiece cellFromPiece;
+    int toRow;
+    int fromRow;
+    int toCol;
+    int fromCol;
+    int deltaX;
+    int deltaY;
+    int midRow;
+    int midCol;
+
     public Move(Cell cell, Cell[][] board){
         this.cell =cell;
         this.board = board;
+        App.tempCell = new Cell(cell.getX(), cell.getY());
+
+    }
+
+    public void tick(){
+        if (Math.abs(App.tempCell.dx-board[toRow][toCol].getX())<0.0001){
+            cellFromPiece.isMoving=false;
+            board[toRow][toCol].setPiece(cellFromPiece);
+            App.tempCell = new Cell(0,0);
+            App.tempCell.X1 = 0;
+            App.tempCell.Y1 = 0;
+
+            for (int i = 0; i < 8; i++) {
+                if (board[0][i].getPiece() != null) {
+                    if (board[0][i].getPiece().getColour() == 'b') {
+                        board[0][i].getPiece().setColour('B');
+                    }
+                }
+            }
+            for (int i = 0; i < 8; i++) {
+                if (board[7][i].getPiece() != null) {
+                    if (board[7][i].getPiece().getColour() == 'w') {
+                        board[7][i].getPiece().setColour('W');
+                    }
+                }
+            }
+
+        } else {
+            App.tempCell.move();
+        }
     }
 
     public CheckersPiece processMove(Cell cellFrom, Cell cellTo) {
         CheckersPiece midPiece = null;
 
-        int toRow = cellTo.getY();
-        int fromRow = cellFrom.getY();
-        int toCol = cellTo.getX();
-        int fromCol = cellFrom.getX();
-        int deltaX = toRow - fromRow;
-        int deltaY = toCol - fromCol;
-        int midRow = fromRow + deltaX / 2;
-        int midCol = fromCol + deltaY / 2;
+        toRow = cellTo.getY();
+        fromRow = cellFrom.getY();
+        toCol = cellTo.getX();
+        fromCol = cellFrom.getX();
+        deltaX = toRow - fromRow;
+        deltaY = toCol - fromCol;
+        midRow = fromRow + deltaX / 2;
+        midCol = fromCol + deltaY / 2;
 
         if (Math.abs(cellFrom.getX() - cellTo.getX()) > 1) {
             midPiece = board[midRow][midCol].getPiece();
@@ -38,24 +76,27 @@ public class Move {
             output = (Character.toLowerCase(midPiece.getColour()) != Character.toLowerCase(cellFrom.getPiece().getColour()));
         }
 
-        CheckersPiece cellFromPiece = cellFrom.getPiece();
-
+        cellFromPiece = cellFrom.getPiece();
         cellFrom.setPiece(null);
-        cellTo.setPiece(cellFromPiece);
 
-        for (int i = 0; i < 8; i++) {
-            if (board[0][i].getPiece() != null) {
-                if (board[0][i].getPiece().getColour() == 'b') {
-                    board[0][i].getPiece().setColour('B');
-                }
-            }
-        }
-        for (int i = 0; i < 8; i++) {
-            if (board[7][i].getPiece() != null) {
-                if (board[7][i].getPiece().getColour() == 'w') {
-                    board[7][i].getPiece().setColour('W');
-                }
-            }
+        cellFromPiece.isMoving = true;
+
+
+        App.tempCell = new Cell(fromCol,fromRow);
+        App.tempCell.setPiece(cellFromPiece);
+
+        if (deltaX > 0 && deltaY > 0) {
+            App.tempCell.X1 = 1.0F;
+            App.tempCell.Y1 = 1.0F;
+        } else if (deltaX > 0 && deltaY < 0) {
+            App.tempCell.X1 = -1.0F;
+            App.tempCell.Y1 = 1.0F;
+        } else if (deltaX < 0 && deltaY > 0) {
+            App.tempCell.X1 = 1.0F;
+            App.tempCell.Y1 = -1*1.0F;
+        } else if (deltaX < 0 && deltaY < 0) {
+            App.tempCell.X1 = -1.0F;
+            App.tempCell.Y1 = -1.0F;
         }
 
         if (output) {
@@ -157,5 +198,4 @@ public class Move {
         }
         return false; // If none of the conditions are met, the move is invalid
     }
-
 }
